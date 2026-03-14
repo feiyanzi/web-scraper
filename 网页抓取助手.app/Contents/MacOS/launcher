@@ -1,0 +1,27 @@
+#!/bin/bash
+# 网页抓取助手启动器
+
+APP_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+
+cd "$APP_DIR"
+
+# 检查端口
+PORT=5555
+if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
+    osascript -e 'display notification "服务器已在运行，请刷新浏览器" with title "网页抓取助手"'
+    open "http://localhost:$PORT"
+    exit 0
+fi
+
+# 启动服务器
+osascript -e 'display notification "正在启动服务器..." with title "网页抓取助手"'
+
+python3 "$APP_DIR/server.py" &
+
+# 等待服务器启动
+sleep 2
+
+# 打开浏览器
+open "http://localhost:$PORT"
+
+osascript -e 'display notification "服务器已启动！" with title "网页抓取助手"'

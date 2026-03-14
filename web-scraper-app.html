@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页抓取助手 - Web Scraper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .settings-bar {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-group label {
+            font-weight: 600;
+            color: #495057;
+            white-space: nowrap;
+        }
+
+        .setting-group input {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 14px;
+            width: 300px;
+            transition: border-color 0.3s;
+        }
+
+        .setting-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #495057;
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        .input-section label {
+            display: block;
+            font-weight: 600;
+            color: #343a40;
+            margin-bottom: 10px;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .urls-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: monospace;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .urls-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .option-item label {
+            cursor: pointer;
+            color: #495057;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .progress-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-section.show {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-card.success {
+            border-left-color: #28a745;
+        }
+
+        .result-card.error {
+            border-left-color: #dc3545;
+        }
+
+        .result-card.pending {
+            border-left-color: #ffc107;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #343a40;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-status {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-downloading {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .result-info {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .result-info span {
+            margin-right: 20px;
+        }
+
+        .preview-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .preview-section.show {
+            display: block;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .preview-content {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            color: #d4d4d4;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .image-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .image-item .filename {
+            padding: 8px;
+            font-size: 12px;
+            color: #6c757d;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-section {
+            margin-top: 30px;
+        }
+
+        .history-title {
+            font-weight: 600;
+            color: #343a40;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .history-item .info {
+            flex: 1;
+        }
+
+        .history-item .title {
+            font-weight: 500;
+            color: #343a40;
+            margin-bottom: 4px;
+        }
+
+        .history-item .meta {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .history-item .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            background: #e9ecef;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .icon-btn:hover {
+            background: #dee2e6;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            background: #343a40;
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: #28a745;
+        }
+
+        .toast.error {
+            background: #dc3545;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #dc3545;
+        }
+
+        .status-dot.connected {
+            background: #28a745;
+        }
+
+        .status-dot.connecting {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .advanced-options {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .advanced-toggle:hover {
+            color: #495057;
+        }
+
+        .advanced-content {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .advanced-content.show {
+            display: block;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .settings-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .setting-group input {
+                width: 100%;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕷️ 网页抓取助手</h1>
+            <p>抓取网页内容，保存为 Markdown，下载图片到本地</p>
+        </div>
+
+        <div class="main-card">
+            <div class="settings-bar">
+                <div class="setting-group">
+                    <label>📁 保存路径:</label>
+                    <input type="text" id="savePath" placeholder="默认: 当前文件夹" value="">
+                </div>
+                <div class="api-status">
+                    <span class="status-dot" id="serverStatus"></span>
+                    <span id="serverStatusText">检查服务器状态...</span>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="single">单篇抓取</div>
+                <div class="tab" data-tab="batch">批量抓取</div>
+                <div class="tab" data-tab="history">历史记录</div>
+                <div class="tab" data-tab="settings">设置</div>
+            </div>
+
+            <!-- 单篇抓取 -->
+            <div class="tab-content active" id="single-tab">
+                <div class="input-section">
+                    <label>输入网页链接</label>
+                    <input type="text" class="url-input" id="singleUrl" placeholder="https://mp.weixin.qq.com/s/xxx 或任意网页链接">
+                </div>
+
+                <div class="options-grid">
+                    <div class="option-item">
+                        <input type="checkbox" id="downloadImages" checked>
+                        <label for="downloadImages">下载图片到本地</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="convertLinks" checked>
+                        <label for="convertLinks">转换图片链接为本地路径</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="includeMetadata" checked>
+                        <label for="includeMetadata">包含元数据（来源、作者等）</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="preserveFormat" checked>
+                        <label for="preserveFormat">保留原始格式</label>
+                    </div>
+                </div>
+
+                <div class="advanced-options">
+                    <div class="advanced-toggle" onclick="toggleAdvanced()">
+                        <span>⚙️ 高级选项</span>
+                        <span id="advancedArrow">▼</span>
+                    </div>
+                    <div class="advanced-content" id="advancedContent">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>文件名格式</label>
+                                <select id="filenameFormat">
+                                    <option value="title">使用标题</option>
+                                    <option value="date-title">日期_标题</option>
+                                    <option value="domain-title">域名_标题</option>
+                                    <option value="custom">自定义</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>图片文件夹</label>
+                                <select id="imageFolder">
+                                    <option value="images">images</option>
+                                    <option value="assets">assets</option>
+                                    <option value="media">media</option>
+                                    <option value="same">与MD同目录</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>图片格式</label>
+                                <select id="imageFormat">
+                                    <option value="original">保持原格式</option>
+                                    <option value="jpg">转为 JPG</option>
+                                    <option value="png">转为 PNG</option>
+                                    <option value="webp">转为 WebP</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>图片命名</label>
+                                <select id="imageNaming">
+                                    <option value="number">数字编号 (01, 02...)</option>
+                                    <option value="hash">文件哈希</option>
+                                    <option value="timestamp">时间戳</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="scrapeBtn" onclick="scrapeSingle()">
+                        <span>🚀 开始抓取</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="previewUrl()">
+                        <span>👁️ 预览</span>
+                    </button>
+                </div>
+
+                <div class="progress-section" id="singleProgress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="singleProgressFill"></div>
+                    </div>
+                    <p class="progress-text" id="singleProgressText">准备中...</p>
+                </div>
+
+                <div class="preview-section" id="previewSection">
+                    <div class="preview-header">
+                        <h3>📄 预览</h3>
+                        <button class="btn btn-secondary" onclick="closePreview()">关闭</button>
+                    </div>
+                    <div class="preview-content" id="previewContent"></div>
+                    <div class="image-grid" id="previewImages"></div>
+                </div>
+            </div>
+
+            <!-- 批量抓取 -->
+            <div class="tab-content" id="batch-tab">
+                <div class="input-section">
+                    <label>输入多个链接（每行一个）</label>
+                    <textarea class="urls-textarea" id="batchUrls" placeholder="https://mp.weixin.qq.com/s/xxx
+https://example.com/article1
+https://example.com/article2"></textarea>
+                </div>
+
+                <div class="options-grid">
+                    <div class="option-item">
+                        <input type="checkbox" id="batchDownloadImages" checked>
+                        <label for="batchDownloadImages">下载图片到本地</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="batchConvertLinks" checked>
+                        <label for="batchConvertLinks">转换图片链接为本地路径</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="batchIncludeMetadata" checked>
+                        <label for="batchIncludeMetadata">包含元数据</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="batchDelay" checked>
+                        <label for="batchDelay">请求间隔（防封禁）</label>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="batchBtn" onclick="scrapeBatch()">
+                        <span>🚀 批量抓取</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearBatch()">
+                        <span>🗑️ 清空</span>
+                    </button>
+                </div>
+
+                <div class="progress-section" id="batchProgress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="batchProgressFill"></div>
+                    </div>
+                    <p class="progress-text" id="batchProgressText">准备中...</p>
+                </div>
+
+                <div class="results-section" id="batchResults"></div>
+            </div>
+
+            <!-- 历史记录 -->
+            <div class="tab-content" id="history-tab">
+                <div class="history-section">
+                    <div class="history-title">
+                        <span>📚 抓取历史</span>
+                        <button class="btn btn-secondary" onclick="clearHistory()" style="padding: 8px 15px; font-size: 14px;">清空历史</button>
+                    </div>
+                    <div class="history-list" id="historyList">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <p>暂无历史记录</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设置 -->
+            <div class="tab-content" id="settings-tab">
+                <h3 style="margin-bottom: 20px;">⚙️ 应用设置</h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>API 服务器地址</label>
+                        <input type="text" id="apiServer" value="http://localhost:5555" placeholder="http://localhost:5555">
+                    </div>
+                    <div class="form-group">
+                        <label>请求超时（秒）</label>
+                        <input type="number" id="requestTimeout" value="60" min="10" max="300">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>默认保存路径</label>
+                        <input type="text" id="defaultSavePath" placeholder="留空使用当前文件夹">
+                    </div>
+                    <div class="form-group">
+                        <label>并发下载数</label>
+                        <input type="number" id="concurrentDownloads" value="3" min="1" max="10">
+                    </div>
+                </div>
+
+                <div class="options-grid" style="margin-top: 20px;">
+                    <div class="option-item">
+                        <input type="checkbox" id="autoOpenFolder" checked>
+                        <label for="autoOpenFolder">完成后自动打开文件夹</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="showNotification" checked>
+                        <label for="showNotification">显示完成通知</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="saveHistory" checked>
+                        <label for="saveHistory">保存历史记录</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="overwriteExisting">
+                        <label for="overwriteExisting">覆盖已存在文件</label>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="saveSettings()">
+                        <span>💾 保存设置</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetSettings()">
+                        <span>🔄 重置默认</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 配置
+        const config = {
+            apiServer: 'http://localhost:5555',
+            defaultSavePath: '',
+            requestTimeout: 60,
+            concurrentDownloads: 3,
+            autoOpenFolder: true,
+            showNotification: true,
+            saveHistory: true,
+            overwriteExisting: false
+        };
+
+        // 历史记录
+        let history = JSON.parse(localStorage.getItem('scraperHistory') || '[]');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            checkServerStatus();
+            renderHistory();
+
+            // 标签切换
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+                });
+            });
+        });
+
+        // 加载设置
+        function loadSettings() {
+            const saved = localStorage.getItem('scraperSettings');
+            if (saved) {
+                Object.assign(config, JSON.parse(saved));
+            }
+
+            document.getElementById('apiServer').value = config.apiServer;
+            document.getElementById('defaultSavePath').value = config.defaultSavePath;
+            document.getElementById('requestTimeout').value = config.requestTimeout;
+            document.getElementById('concurrentDownloads').value = config.concurrentDownloads;
+            document.getElementById('autoOpenFolder').checked = config.autoOpenFolder;
+            document.getElementById('showNotification').checked = config.showNotification;
+            document.getElementById('saveHistory').checked = config.saveHistory;
+            document.getElementById('overwriteExisting').checked = config.overwriteExisting;
+            document.getElementById('savePath').value = config.defaultSavePath;
+        }
+
+        // 保存设置
+        function saveSettings() {
+            config.apiServer = document.getElementById('apiServer').value;
+            config.defaultSavePath = document.getElementById('defaultSavePath').value;
+            config.requestTimeout = parseInt(document.getElementById('requestTimeout').value);
+            config.concurrentDownloads = parseInt(document.getElementById('concurrentDownloads').value);
+            config.autoOpenFolder = document.getElementById('autoOpenFolder').checked;
+            config.showNotification = document.getElementById('showNotification').checked;
+            config.saveHistory = document.getElementById('saveHistory').checked;
+            config.overwriteExisting = document.getElementById('overwriteExisting').checked;
+
+            localStorage.setItem('scraperSettings', JSON.stringify(config));
+            showToast('设置已保存', 'success');
+            checkServerStatus();
+        }
+
+        // 重置设置
+        function resetSettings() {
+            localStorage.removeItem('scraperSettings');
+            location.reload();
+        }
+
+        // 检查服务器状态
+        async function checkServerStatus() {
+            const statusDot = document.getElementById('serverStatus');
+            const statusText = document.getElementById('serverStatusText');
+
+            statusDot.className = 'status-dot connecting';
+            statusText.textContent = '连接中...';
+
+            try {
+                const response = await fetch(`${config.apiServer}/api/status`, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(5000)
+                });
+
+                if (response.ok) {
+                    statusDot.className = 'status-dot connected';
+                    statusText.textContent = '服务器已连接';
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                statusDot.className = 'status-dot';
+                statusText.textContent = '服务器未连接 - 请启动后端服务';
+            }
+        }
+
+        // 切换高级选项
+        function toggleAdvanced() {
+            const content = document.getElementById('advancedContent');
+            const arrow = document.getElementById('advancedArrow');
+            content.classList.toggle('show');
+            arrow.textContent = content.classList.contains('show') ? '▲' : '▼';
+        }
+
+        // 单篇抓取
+        async function scrapeSingle() {
+            const url = document.getElementById('singleUrl').value.trim();
+            if (!url) {
+                showToast('请输入链接', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('scrapeBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div><span>抓取中...</span>';
+
+            const progressSection = document.getElementById('singleProgress');
+            const progressFill = document.getElementById('singleProgressFill');
+            const progressText = document.getElementById('singleProgressText');
+
+            progressSection.classList.add('show');
+            progressFill.style.width = '10%';
+            progressText.textContent = '正在获取网页内容...';
+
+            const options = {
+                downloadImages: document.getElementById('downloadImages').checked,
+                convertLinks: document.getElementById('convertLinks').checked,
+                includeMetadata: document.getElementById('includeMetadata').checked,
+                preserveFormat: document.getElementById('preserveFormat').checked,
+                filenameFormat: document.getElementById('filenameFormat').value,
+                imageFolder: document.getElementById('imageFolder').value,
+                imageFormat: document.getElementById('imageFormat').value,
+                imageNaming: document.getElementById('imageNaming').value,
+                savePath: document.getElementById('savePath').value || config.defaultSavePath
+            };
+
+            try {
+                // 调用后端 API
+                const response = await fetch(`${config.apiServer}/api/scrape`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, options })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                progressFill.style.width = '50%';
+                progressText.textContent = '正在处理内容...';
+
+                const result = await response.json();
+
+                if (result.success) {
+                    progressFill.style.width = '100%';
+                    progressText.textContent = '完成！';
+
+                    // 添加到历史
+                    if (config.saveHistory) {
+                        addToHistory({
+                            url,
+                            title: result.title,
+                            filePath: result.filePath,
+                            imageCount: result.imageCount,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+
+                    showToast(`抓取成功！保存到: ${result.filePath}`, 'success');
+
+                    // 自动打开文件夹
+                    if (config.autoOpenFolder) {
+                        // 通过后端打开文件夹
+                        fetch(`${config.apiServer}/api/open-folder`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ path: result.folderPath })
+                        });
+                    }
+                } else {
+                    throw new Error(result.error || '抓取失败');
+                }
+            } catch (error) {
+                console.error('Scrape error:', error);
+                progressText.textContent = `错误: ${error.message}`;
+                showToast(`抓取失败: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>🚀 开始抓取</span>';
+            }
+        }
+
+        // 预览 URL
+        async function previewUrl() {
+            const url = document.getElementById('singleUrl').value.trim();
+            if (!url) {
+                showToast('请输入链接', 'error');
+                return;
+            }
+
+            const previewSection = document.getElementById('previewSection');
+            const previewContent = document.getElementById('previewContent');
+            const previewImages = document.getElementById('previewImages');
+
+            previewSection.classList.add('show');
+            previewContent.textContent = '加载中...';
+            previewImages.innerHTML = '';
+
+            try {
+                const response = await fetch(`${config.apiServer}/api/preview`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    previewContent.textContent = result.content.substring(0, 5000) + (result.content.length > 5000 ? '\n\n... (内容已截断)' : '');
+
+                    if (result.images && result.images.length > 0) {
+                        previewImages.innerHTML = result.images.map((img, i) => `
+                            <div class="image-item">
+                                <img src="${img.url}" alt="${img.alt || ''}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖼️</text></svg>'">
+                                <div class="filename">${img.filename || `image_${i + 1}`}</div>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                previewContent.textContent = `预览失败: ${error.message}`;
+            }
+        }
+
+        // 关闭预览
+        function closePreview() {
+            document.getElementById('previewSection').classList.remove('show');
+        }
+
+        // 批量抓取
+        async function scrapeBatch() {
+            const urls = document.getElementById('batchUrls').value.trim().split('\n').filter(u => u.trim());
+            if (urls.length === 0) {
+                showToast('请输入至少一个链接', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('batchBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div><span>批量抓取中...</span>';
+
+            const progressSection = document.getElementById('batchProgress');
+            const progressFill = document.getElementById('batchProgressFill');
+            const progressText = document.getElementById('batchProgressText');
+            const resultsSection = document.getElementById('batchResults');
+
+            progressSection.classList.add('show');
+            resultsSection.innerHTML = '';
+
+            const options = {
+                downloadImages: document.getElementById('batchDownloadImages').checked,
+                convertLinks: document.getElementById('batchConvertLinks').checked,
+                includeMetadata: document.getElementById('batchIncludeMetadata').checked,
+                useDelay: document.getElementById('batchDelay').checked,
+                savePath: document.getElementById('savePath').value || config.defaultSavePath
+            };
+
+            let completed = 0;
+            let success = 0;
+            let failed = 0;
+
+            for (const url of urls) {
+                const trimmedUrl = url.trim();
+                if (!trimmedUrl) continue;
+
+                progressText.textContent = `正在抓取 (${completed + 1}/${urls.length}): ${trimmedUrl.substring(0, 50)}...`;
+
+                // 添加结果卡片
+                const resultId = `result-${Date.now()}`;
+                resultsSection.innerHTML += `
+                    <div class="result-card pending" id="${resultId}">
+                        <div class="result-title">
+                            <span>${trimmedUrl.substring(0, 60)}${trimmedUrl.length > 60 ? '...' : ''}</span>
+                            <span class="result-status status-downloading">抓取中</span>
+                        </div>
+                        <div class="result-info">等待处理...</div>
+                    </div>
+                `;
+
+                try {
+                    const response = await fetch(`${config.apiServer}/api/scrape`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: trimmedUrl, options })
+                    });
+
+                    const result = await response.json();
+                    const resultCard = document.getElementById(resultId);
+
+                    if (result.success) {
+                        success++;
+                        resultCard.className = 'result-card success';
+                        resultCard.innerHTML = `
+                            <div class="result-title">
+                                <span>${result.title || trimmedUrl}</span>
+                                <span class="result-status status-success">成功</span>
+                            </div>
+                            <div class="result-info">
+                                <span>📄 ${result.filePath}</span>
+                                <span>🖼️ ${result.imageCount || 0} 张图片</span>
+                            </div>
+                        `;
+
+                        if (config.saveHistory) {
+                            addToHistory({
+                                url: trimmedUrl,
+                                title: result.title,
+                                filePath: result.filePath,
+                                imageCount: result.imageCount,
+                                timestamp: new Date().toISOString()
+                            });
+                        }
+                    } else {
+                        throw new Error(result.error || '抓取失败');
+                    }
+                } catch (error) {
+                    failed++;
+                    const resultCard = document.getElementById(resultId);
+                    resultCard.className = 'result-card error';
+                    resultCard.innerHTML = `
+                        <div class="result-title">
+                            <span>${trimmedUrl.substring(0, 60)}...</span>
+                            <span class="result-status status-error">失败</span>
+                        </div>
+                        <div class="result-info" style="color: #dc3545;">${error.message}</div>
+                    `;
+                }
+
+                completed++;
+                progressFill.style.width = `${(completed / urls.length) * 100}%`;
+
+                // 延迟
+                if (options.useDelay && completed < urls.length) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+
+            progressText.textContent = `完成！成功: ${success}, 失败: ${failed}`;
+            showToast(`批量抓取完成！成功 ${success} 篇，失败 ${failed} 篇`, success === urls.length ? 'success' : 'error');
+
+            btn.disabled = false;
+            btn.innerHTML = '<span>🚀 批量抓取</span>';
+        }
+
+        // 清空批量
+        function clearBatch() {
+            document.getElementById('batchUrls').value = '';
+            document.getElementById('batchProgress').classList.remove('show');
+            document.getElementById('batchResults').innerHTML = '';
+        }
+
+        // 添加到历史
+        function addToHistory(item) {
+            history.unshift(item);
+            if (history.length > 50) history.pop();
+            localStorage.setItem('scraperHistory', JSON.stringify(history));
+            renderHistory();
+        }
+
+        // 渲染历史
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p>暂无历史记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = history.map((item, index) => `
+                <div class="history-item">
+                    <div class="info">
+                        <div class="title">${item.title || item.url}</div>
+                        <div class="meta">
+                            ${new Date(item.timestamp).toLocaleString('zh-CN')} ·
+                            ${item.imageCount || 0} 张图片
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="icon-btn" onclick="openHistoryItem(${index})" title="打开文件夹">📁</button>
+                        <button class="icon-btn" onclick="rescrape('${item.url}')" title="重新抓取">🔄</button>
+                        <button class="icon-btn" onclick="deleteHistoryItem(${index})" title="删除">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 打开历史项
+        async function openHistoryItem(index) {
+            const item = history[index];
+            if (item.folderPath) {
+                await fetch(`${config.apiServer}/api/open-folder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: item.folderPath })
+                });
+            }
+        }
+
+        // 重新抓取
+        function rescrape(url) {
+            document.querySelector('.tab[data-tab="single"]').click();
+            document.getElementById('singleUrl').value = url;
+        }
+
+        // 删除历史项
+        function deleteHistoryItem(index) {
+            history.splice(index, 1);
+            localStorage.setItem('scraperHistory', JSON.stringify(history));
+            renderHistory();
+        }
+
+        // 清空历史
+        function clearHistory() {
+            if (confirm('确定要清空所有历史记录吗？')) {
+                history = [];
+                localStorage.removeItem('scraperHistory');
+                renderHistory();
+                showToast('历史记录已清空', 'success');
+            }
+        }
+
+        // 显示 Toast
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

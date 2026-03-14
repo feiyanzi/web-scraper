@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config (user-specific)
+.web-scraper-config.json
+
+# Downloads (user content)
+Downloads/
+downloads/
+
+# Logs
+*.log
