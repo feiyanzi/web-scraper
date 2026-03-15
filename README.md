@@ -43,6 +43,10 @@ pip install playwright  # 可选，用于动态网站
 playwright install chromium  # 安装浏览器
 ```
 
+**桌面应用**
+双击 `网页抓取助手.app` 启动服务器，访问 http://localhost:5555
+```
+
 ## 使用方法
 
 ### 方式一：命令行启动
