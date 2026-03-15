@@ -33,8 +33,8 @@ CORS(app)
 DEFAULT_SAVE_PATH = os.path.expanduser("~/Downloads/web-scraper")
 USER_CONFIG_PATH = os.path.expanduser("~/.web-scraper-config.json")
 
-# 需要使用 Playwright 的网站（有反爬虫机制）
-DYNAMIC_SITES = ['twitter.com', 'x.com', 'facebook.com', 'instagram.com', 'tiktok.com', 'zhihu.com']
+# 需要使用 Playwright 的网站（动态渲染/反爬虫机制）
+DYNAMIC_SITES = ['twitter.com', 'x.com', 'facebook.com', 'instagram.com', 'tiktok.com', 'zhihu.com', '42plugin.com']
 
 # 需要特殊 headers 的网站
 SPECIAL_HEADERS = {
@@ -123,6 +123,12 @@ def fetch_page_dynamic(url):
         try:
             page.goto(url, wait_until='networkidle', timeout=60000)
             page.wait_for_timeout(3000)
+            # 滚动页面以触发懒加载
+            for _ in range(3):
+                page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                page.wait_for_timeout(1000)
+            page.evaluate('window.scrollTo(0, 0)')
+            page.wait_for_timeout(1000)
             if 'twitter.com' in url or 'x.com' in url:
                 try:
                     page.wait_for_selector('article[data-testid="tweet"]', timeout=10000)

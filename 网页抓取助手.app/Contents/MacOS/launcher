@@ -1,27 +1,29 @@
 #!/bin/bash
-# 网页抓取助手启动器
+# 网页抓取助手启动器 v1.1
+# 支持 42plugin.com、知乎、Twitter 等动态网站
 
-APP_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+PROJECT_DIR="/Users/feiyanzi22/Desktop/aipd/PACONG APP-2026-3-14/web-scraper-project"
+SERVER_URL="http://localhost:5555"
+HTML_FILE="$PROJECT_DIR/web-scraper-app.html"
 
-cd "$APP_DIR"
-
-# 检查端口
-PORT=5555
-if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
-    osascript -e 'display notification "服务器已在运行，请刷新浏览器" with title "网页抓取助手"'
-    open "http://localhost:$PORT"
-    exit 0
-fi
+# 检查服务器是否运行
+check_server() {
+    curl -s "$SERVER_URL/api/config" > /dev/null 2>&1
+    return $?
+}
 
 # 启动服务器
-osascript -e 'display notification "正在启动服务器..." with title "网页抓取助手"'
+start_server() {
+    cd "$PROJECT_DIR"
+    nohup python3 server.py > /tmp/web-scraper.log 2>&1 &
+    echo "正在启动服务器..."
+    sleep 3
+}
 
-python3 "$APP_DIR/server.py" &
-
-# 等待服务器启动
-sleep 2
+# 主逻辑
+if ! check_server; then
+    start_server
+fi
 
 # 打开浏览器
-open "http://localhost:$PORT"
-
-osascript -e 'display notification "服务器已启动！" with title "网页抓取助手"'
+open "$HTML_FILE"
