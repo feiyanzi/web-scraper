@@ -473,6 +473,9 @@ def browse_folder():
     try:
         items = []
         for item in os.listdir(path):
+            # 过滤隐藏文件夹（以.开头的文件夹）
+            if item.startswith('.'):
+                continue
             full_path = os.path.join(path, item)
             if os.path.isdir(full_path):
                 items.append({'name': item, 'path': full_path, 'type': 'folder'})
