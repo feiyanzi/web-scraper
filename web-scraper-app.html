@@ -1391,7 +1391,8 @@ https://example.com/article2"></textarea>
         let currentBrowsePath = '';
 
         async function openFolderBrowser() {
-            currentBrowsePath = document.getElementById('savePath').value || os.homedir();
+            const inputPath = document.getElementById('savePath').value;
+            currentBrowsePath = inputPath || '/Users/feiyanzi22/Downloads/web-scraper';
             document.getElementById('folderBrowserModal').style.display = 'flex';
             await loadFolderList(currentBrowsePath);
         }
