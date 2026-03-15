@@ -617,7 +617,27 @@
                 flex-direction: column;
             }
         }
-    </style>
+    .folder-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.folder-item:hover {
+    background: #3d3d3d;
+}
+.folder-icon {
+    font-size: 16px;
+}
+.empty-folder {
+    padding: 20px;
+    text-align: center;
+    color: #888;
+}
+</style>
 </head>
 <body>
     <div class="container">
@@ -630,7 +650,8 @@
             <div class="settings-bar">
                 <div class="setting-group">
                     <label>📁 保存路径:</label>
-                    <input type="text" id="savePath" placeholder="默认: 当前文件夹" value="">
+                    <input type="text" id="savePath" placeholder="默认: 当前文件夹" value="" style="flex: 1;">
+                    <button class="btn-secondary" onclick="openFolderBrowser()" style="margin-left: 8px; padding: 8px 12px;">浏览</button>
                 </div>
                 <div class="api-status">
                     <span class="status-dot" id="serverStatus"></span>
@@ -1321,6 +1342,90 @@ https://example.com/article2"></textarea>
                 toast.classList.remove('show');
             }, 3000);
         }
+
+        // 文件夹选择器
+        let currentBrowsePath = '';
+
+        async function openFolderBrowser() {
+            currentBrowsePath = document.getElementById('savePath').value || os.homedir();
+            document.getElementById('folderBrowserModal').style.display = 'flex';
+            await loadFolderList(currentBrowsePath);
+        }
+
+        function closeFolderBrowser() {
+            document.getElementById('folderBrowserModal').style.display = 'none';
+        }
+
+        async function loadFolderList(path) {
+            try {
+                const response = await fetch(`${config.apiServer}/api/browse-folder?path=${encodeURIComponent(path)}`);
+                const data = await response.json();
+                if (data.success) {
+                    currentBrowsePath = data.currentPath;
+                    document.getElementById('currentFolderPath').textContent = data.currentPath;
+                    const listContainer = document.getElementById('folderList');
+                    listContainer.innerHTML = '';
+                    // 返回上一级
+                    if (data.parentPath && data.parentPath !== data.currentPath) {
+                        const parentItem = document.createElement('div');
+                        parentItem.className = 'folder-item';
+                        parentItem.innerHTML = '<span class="folder-icon">📁</span> ..';
+                        parentItem.onclick = () => loadFolderList(data.parentPath);
+                        listContainer.appendChild(parentItem);
+                    }
+                    // 文件夹列表
+                    data.items.forEach(item => {
+                        const folderItem = document.createElement('div');
+                        folderItem.className = 'folder-item';
+                        folderItem.innerHTML = `<span class="folder-icon">📁</span> ${item.name}`;
+                        folderItem.onclick = () => loadFolderList(item.path);
+                        listContainer.appendChild(folderItem);
+                    });
+                    if (data.items.length === 0) {
+                        listContainer.innerHTML = '<div class="empty-folder">此文件夹为空</div>';
+                    }
+                } else {
+                    showToast('加载文件夹失败: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showToast('加载文件夹失败: ' + error.message, 'error');
+            }
+        }
+
+        function selectCurrentFolder() {
+            document.getElementById('savePath').value = currentBrowsePath;
+            closeFolderBrowser();
+            showToast('已选择: ' + currentBrowsePath, 'success');
+        }
+
+        function createNewFolder() {
+            const folderName = prompt('请输入新文件夹名称:');
+            if (folderName) {
+                const newPath = currentBrowsePath + '/' + folderName;
+                document.getElementById('savePath').value = newPath;
+                closeFolderBrowser();
+                showToast('将创建: ' + newPath, 'success');
+            }
+        }
     </script>
+
+    <!-- 文件夹选择对话框 -->
+    <div id="folderBrowserModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px; max-height: 80vh;">
+            <div class="modal-header">
+                <h3>📁 选择保存路径</h3>
+                <button class="close-btn" onclick="closeFolderBrowser()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 16px;">
+                <div id="currentFolderPath" style="background: #2d2d2d; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-family: monospace; word-break: break-all;"></div>
+                <div id="folderList" style="max-height: 400px; overflow-y: auto; border: 1px solid #3d3d3d; border-radius: 8px; padding: 8px;"></div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 12px; justify-content: flex-end; padding: 16px; border-top: 1px solid #3d3d3d;">
+                <button class="btn btn-secondary" onclick="createNewFolder()">新建文件夹</button>
+                <button class="btn btn-secondary" onclick="closeFolderBrowser()">取消</button>
+                <button class="btn btn-primary" onclick="selectCurrentFolder()">选择此文件夹</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
