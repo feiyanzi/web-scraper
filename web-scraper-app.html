@@ -680,6 +680,51 @@
         background: rgba(30, 30, 46, 0.9);
         color: #ffd700;
     }
+    body.dark-mode #savedPathsDropdown {
+        background: #2a2a3e;
+        border-color: #3a3a4e;
+    }
+    body.dark-mode #savedPathsDropdown div {
+        color: #e0e0e0;
+        border-bottom-color: #3a3a4e;
+    }
+    body.dark-mode #savedPathsDropdown div:hover {
+        background: #3a3a5e !important;
+    }
+    /* 模态框始终保持白底黑字，不受深色模式影响 */
+    body.dark-mode .modal-content {
+        background: #ffffff !important;
+        color: #333333 !important;
+    }
+    body.dark-mode .modal-header {
+        background: #f8f9fa !important;
+        border-bottom-color: #e0e0e0 !important;
+    }
+    body.dark-mode .modal-header h3 {
+        color: #333333 !important;
+    }
+    body.dark-mode .modal-body {
+        background: #ffffff !important;
+        color: #333333 !important;
+    }
+    body.dark-mode .modal-body .folder-item {
+        color: #333333 !important;
+        background: transparent !important;
+    }
+    body.dark-mode .modal-body .folder-item:hover {
+        background: #e8e8e8 !important;
+    }
+    body.dark-mode .modal-footer {
+        background: #f8f9fa !important;
+        border-top-color: #e0e0e0 !important;
+    }
+    body.dark-mode .close-btn {
+        color: #666666 !important;
+    }
+    body.dark-mode .close-btn:hover {
+        background: #e0e0e0 !important;
+        color: #333333 !important;
+    }
 
     /* 文件夹选择对话框样式 - 白底黑字 */
     .modal {
@@ -729,6 +774,20 @@
         border-radius: 4px;
     }
     .modal-close:hover {
+        background: #e0e0e0;
+        color: #333333;
+    }
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: #666666;
+        padding: 0 8px;
+        border-radius: 4px;
+        line-height: 1;
+    }
+    .close-btn:hover {
         background: #e0e0e0;
         color: #333333;
     }
@@ -810,10 +869,13 @@
 
         <div class="main-card">
             <div class="settings-bar">
-                <div class="setting-group">
+                <div class="setting-group" style="position: relative;">
                     <label>📁 保存路径:</label>
-                    <input type="text" id="savePath" placeholder="默认: 当前文件夹" value="" style="flex: 1;">
-                    <button class="btn-secondary" onclick="openFolderBrowser()" style="margin-left: 8px; padding: 8px 12px;">浏览</button>
+                    <input type="text" id="savePath" placeholder="默认: 当前文件夹" value="" style="flex: 1;" autocomplete="off">
+                    <button class="btn-secondary" onclick="toggleSavedPathsDropdown()" style="margin-left: 8px; padding: 8px 12px;">▼</button>
+                    <button class="btn-secondary" onclick="openFolderBrowser()" style="margin-left: 4px; padding: 8px 12px;">浏览</button>
+                    <div id="savedPathsDropdown" style="display: none; position: absolute; top: 100%; left: 100px; right: 100px; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; max-height: 300px; overflow-y: auto;">
+                    </div>
                 </div>
                 <div class="api-status">
                     <span class="status-dot" id="serverStatus"></span>
@@ -1097,6 +1159,7 @@ https://example.com/article2"></textarea>
             loadSettings();
             checkServerStatus();
             renderHistory();
+            renderSavedPathsDropdown(); // 初始化保存路径下拉框
 
             // 标签切换
             document.querySelectorAll('.tab').forEach(tab => {
@@ -1158,7 +1221,7 @@ https://example.com/article2"></textarea>
             statusText.textContent = '连接中...';
 
             try {
-                const response = await fetch(`${config.apiServer}/api/status`, {
+                const response = await fetch(`${config.apiServer}/api/config`, {
                     method: 'GET',
                     signal: AbortSignal.timeout(5000)
                 });
@@ -1534,7 +1597,7 @@ https://example.com/article2"></textarea>
 
         async function openFolderBrowser() {
             const inputPath = document.getElementById('savePath').value;
-            currentBrowsePath = inputPath || '/Users/feiyanzi22/Downloads/web-scraper';
+            currentBrowsePath = inputPath || '~/Downloads/web-scraper';
             document.getElementById('folderBrowserModal').style.display = 'flex';
             await loadFolderList(currentBrowsePath);
         }
@@ -1582,8 +1645,80 @@ https://example.com/article2"></textarea>
         function selectCurrentFolder() {
             document.getElementById('savePath').value = currentBrowsePath;
             closeFolderBrowser();
+            // 保存到历史路径
+            savePathToHistory(currentBrowsePath);
             showToast('已选择: ' + currentBrowsePath, 'success');
         }
+
+        // 保存路径历史管理
+        function getSavedPaths() {
+            const saved = localStorage.getItem('savedPaths');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        function savePathToHistory(path) {
+            if (!path) return;
+            let paths = getSavedPaths();
+            // 移除重复项，将新路径放到最前面
+            paths = paths.filter(p => p !== path);
+            paths.unshift(path);
+            // 最多保存10条
+            if (paths.length > 10) {
+                paths = paths.slice(0, 10);
+            }
+            localStorage.setItem('savedPaths', JSON.stringify(paths));
+            renderSavedPathsDropdown();
+        }
+
+        function removeSavedPath(path) {
+            let paths = getSavedPaths();
+            paths = paths.filter(p => p !== path);
+            localStorage.setItem('savedPaths', JSON.stringify(paths));
+            renderSavedPathsDropdown();
+            showToast('已移除路径', 'success');
+        }
+
+        function renderSavedPathsDropdown() {
+            const dropdown = document.getElementById('savedPathsDropdown');
+            const paths = getSavedPaths();
+            if (paths.length === 0) {
+                dropdown.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">暂无历史路径</div>';
+                return;
+            }
+            dropdown.innerHTML = paths.map(path => `
+                <div style="display: flex; align-items: center; padding: 10px 12px; border-bottom: 1px solid #eee; cursor: pointer;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'" onclick="selectSavedPath('${path.replace(/'/g, "\\'")}')">
+                    <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px;">📁 ${path}</span>
+                    <button onclick="event.stopPropagation(); removeSavedPath('${path.replace(/'/g, "\\'")}')" style="background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 0 4px;">×</button>
+                </div>
+            `).join('');
+        }
+
+        function selectSavedPath(path) {
+            document.getElementById('savePath').value = path;
+            document.getElementById('savedPathsDropdown').style.display = 'none';
+            showToast('已选择: ' + path, 'success');
+        }
+
+        function toggleSavedPathsDropdown() {
+            const dropdown = document.getElementById('savedPathsDropdown');
+            if (dropdown.style.display === 'none') {
+                renderSavedPathsDropdown();
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        // 点击其他地方关闭下拉框
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('savedPathsDropdown');
+            const settingGroup = e.target.closest('.setting-group');
+            if (!settingGroup || !e.target.closest('#savedPathsDropdown')) {
+                if (dropdown && !e.target.classList.contains('btn-secondary')) {
+                    dropdown.style.display = 'none';
+                }
+            }
+        });
 
         function createNewFolder() {
             const folderName = prompt('请输入新文件夹名称:');
@@ -1604,10 +1739,10 @@ https://example.com/article2"></textarea>
                 <button class="close-btn" onclick="closeFolderBrowser()">&times;</button>
             </div>
             <div class="modal-body" style="padding: 16px;">
-                <div id="currentFolderPath" style="background: #2d2d2d; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-family: monospace; word-break: break-all;"></div>
-                <div id="folderList" style="max-height: 400px; overflow-y: auto; border: 1px solid #3d3d3d; border-radius: 8px; padding: 8px;"></div>
+                <div id="currentFolderPath" style="background: #f0f0f0; color: #333; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-family: monospace; word-break: break-all;"></div>
+                <div id="folderList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 8px;"></div>
             </div>
-            <div class="modal-footer" style="display: flex; gap: 12px; justify-content: flex-end; padding: 16px; border-top: 1px solid #3d3d3d;">
+            <div class="modal-footer" style="display: flex; gap: 12px; justify-content: flex-end; padding: 16px; border-top: 1px solid #e0e0e0;">
                 <button class="btn btn-secondary" onclick="createNewFolder()">新建文件夹</button>
                 <button class="btn btn-secondary" onclick="closeFolderBrowser()">取消</button>
                 <button class="btn btn-primary" onclick="selectCurrentFolder()">选择此文件夹</button>

@@ -1,29 +1,106 @@
 #!/bin/bash
-# 网页抓取助手启动器 v1.1
-# 支持 42plugin.com、知乎、Twitter 等动态网站
+# 网页抓取助手启动器 v3.0
+# 使用 Terminal 启动服务器，彻底解决 macOS TCC 安全限制问题
 
-PROJECT_DIR="/Users/feiyanzi22/Desktop/aipd/PACONG APP-2026-3-14/web-scraper-project"
+PROJECT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 SERVER_URL="http://localhost:5555"
-HTML_FILE="$PROJECT_DIR/web-scraper-app.html"
+LOG_FILE="/tmp/web-scraper-launcher.log"
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+}
 
 # 检查服务器是否运行
 check_server() {
-    curl -s "$SERVER_URL/api/config" > /dev/null 2>&1
+    curl -s --connect-timeout 2 "$SERVER_URL/api/config" > /dev/null 2>&1
     return $?
 }
 
-# 启动服务器
-start_server() {
-    cd "$PROJECT_DIR"
-    nohup python3 server.py > /tmp/web-scraper.log 2>&1 &
-    echo "正在启动服务器..."
-    sleep 3
-}
+log "=== 启动器开始 ==="
 
-# 主逻辑
-if ! check_server; then
-    start_server
+# 如果服务器已经在运行，直接打开浏览器
+if check_server; then
+    log "服务器已在运行，直接打开浏览器"
+    open "$SERVER_URL"
+    log "=== 启动器完成 ==="
+    exit 0
 fi
 
-# 打开浏览器
-open "$HTML_FILE"
+# 创建启动脚本（临时文件，用于在 Terminal 中执行）
+STARTUP_SCRIPT="/tmp/web-scraper-startup.sh"
+cat > "$STARTUP_SCRIPT" << 'SCRIPT_EOF'
+#!/bin/bash
+# 网页抓取助手 - 服务器启动脚本
+PROJECT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+SERVER_URL="http://localhost:5555"
+
+cd "$PROJECT_DIR"
+
+# 查找可用的 Python
+PYTHON_CMD=""
+if [ -f "$PROJECT_DIR/venv/bin/python3" ]; then
+    PYTHON_CMD="$PROJECT_DIR/venv/bin/python3"
+else
+    PYTHON_CMD=$(which python3 2>/dev/null)
+fi
+
+if [ -z "$PYTHON_CMD" ]; then
+    echo "错误: 未找到 Python3"
+    echo "请安装 Python3: https://www.python.org/downloads/"
+    read -p "按 Enter 键关闭..."
+    exit 1
+fi
+
+# 检查依赖
+if ! "$PYTHON_CMD" -c "import flask" 2>/dev/null; then
+    echo "正在安装依赖..."
+    "$PYTHON_CMD" -m pip install flask flask-cors requests beautifulsoup4 --quiet 2>/dev/null
+fi
+
+echo "=========================================="
+echo "  网页抓取助手 - Web Scraper"
+echo "=========================================="
+echo "服务器启动中..."
+echo ""
+
+# 检查端口是否被占用
+if lsof -i :5555 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    echo "端口 5555 已被占用，尝试释放..."
+    PID=$(lsof -i :5555 -sTCP:LISTEN -t)
+    kill $PID 2>/dev/null
+    sleep 1
+fi
+
+# 启动服务器
+"$PYTHON_CMD" "$PROJECT_DIR/server.py"
+SCRIPT_EOF
+
+chmod +x "$STARTUP_SCRIPT"
+
+# 在 Terminal 中启动服务器
+log "在 Terminal 中启动服务器..."
+osascript << APPLESCRIPT
+tell application "Terminal"
+    activate
+    do script "bash '$STARTUP_SCRIPT'"
+end tell
+APPLESCRIPT
+
+# 等待服务器启动
+log "等待服务器启动..."
+for i in {1..15}; do
+    sleep 1
+    if check_server; then
+        log "服务器启动成功"
+        # 等一下让页面完全加载
+        sleep 1
+        open "$SERVER_URL"
+        log "=== 启动器完成 ==="
+        exit 0
+    fi
+done
+
+log "等待超时，但 Terminal 仍在后台尝试启动"
+echo "服务器正在后台启动中，请稍后在浏览器中访问: $SERVER_URL"
+
+log "=== 启动器完成（等待超时）==="
